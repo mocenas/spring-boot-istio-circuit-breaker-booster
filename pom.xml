@@ -35,12 +35,6 @@
     <org.glassfish.javax.json>1.0.3</org.glassfish.javax.json>
   </properties>
 
-  <modules>
-    <module>greeting-service</module>
-    <module>name-service</module>
-    <module>tests</module>
-  </modules>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -52,6 +46,17 @@
   </dependencyManagement>
 
   <profiles>
+    <profile>
+      <id>default</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <modules>
+        <module>greeting-service</module>
+        <module>name-service</module>
+        <module>tests</module>
+      </modules>
+    </profile>
     <profile>
       <id>licenses</id>
       <build>
@@ -75,7 +80,17 @@
       </build>
     </profile>
     <profile>
+      <id>openshift-it</id>
+      <modules>
+        <module>tests</module>
+      </modules>
+    </profile>
+    <profile>
       <id>openshift</id>
+      <modules>
+        <module>greeting-service</module>
+        <module>name-service</module>
+      </modules>
       <build>
         <plugins>
           <plugin>
