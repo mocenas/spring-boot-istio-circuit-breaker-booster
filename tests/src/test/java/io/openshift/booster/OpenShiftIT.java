@@ -7,6 +7,7 @@ import org.arquillian.cube.istio.impl.IstioAssistant;
 import org.arquillian.cube.openshift.impl.enricher.RouteURL;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
+import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -190,7 +191,21 @@ public class OpenShiftIT {
     }
 
     private void waitUntilApplicationIsReady() {
+
         await()
+                .pollInterval(1, TimeUnit.SECONDS)
+                .atMost(30, TimeUnit.MINUTES)
+                .untilAsserted(() ->
+                        {
+                            Response response = RestAssured
+                                    .given()
+                                    .baseUri(ingressGatewayURL.toString())
+                                    .when()
+                                    .get("/breaker/greeting");
+                            System.out.println(response.asString());
+                            Assert.assertEquals(200,response.statusCode());
+                        });
+/*        await()
                 .pollInterval(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES)
                 .untilAsserted(() ->
@@ -201,7 +216,7 @@ public class OpenShiftIT {
                                 .get("/breaker/greeting")
                                 .then()
                                 .statusCode(200)
-                );
+                );*/
     }
 
     private List<me.snowdrop.istio.api.model.IstioResource> deployIstioResource(String istioResource) throws IOException {
