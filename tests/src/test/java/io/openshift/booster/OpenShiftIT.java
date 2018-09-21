@@ -192,6 +192,8 @@ public class OpenShiftIT {
 
     private void waitUntilApplicationIsReady() {
 
+        long startTime = System.currentTimeMillis();
+
         await()
                 .pollInterval(1, TimeUnit.SECONDS)
                 .atMost(30, TimeUnit.MINUTES)
@@ -205,6 +207,11 @@ public class OpenShiftIT {
                             System.out.println(response.asString());
                             Assert.assertEquals(200,response.statusCode());
                         });
+
+        long endTime = System.currentTimeMillis();
+
+        System.out.println("Waiting time: " + ((endTime - startTime)/1000));
+
 /*        await()
                 .pollInterval(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES)
