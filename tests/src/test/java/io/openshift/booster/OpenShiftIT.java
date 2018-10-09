@@ -62,6 +62,7 @@ public class OpenShiftIT {
 
     @Test
     public void testOneWorker() throws IOException, InterruptedException {
+        waitUntilApplicationIsReady();
         ResponsesCount responsesCount = deployAndMeasure(
                 Collections.singletonList("restrictive_destination_rule.yml"),0,1);
 

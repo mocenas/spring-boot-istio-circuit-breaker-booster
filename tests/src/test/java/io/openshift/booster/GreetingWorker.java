@@ -28,6 +28,7 @@ public class GreetingWorker extends Thread {
         for (int i=0; i < requestCount ; i++){
             response = greetingResponse(getName());
 
+            System.out.println("worker response: " + response.body().asString());
             if (response.body().asString().contains("Fallback")){
                 fallbackResponses++;
             } else {
