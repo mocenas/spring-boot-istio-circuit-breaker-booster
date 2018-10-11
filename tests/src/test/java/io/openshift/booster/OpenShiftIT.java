@@ -1,9 +1,15 @@
 package io.openshift.booster;
 
+import io.openshift.booster.IstioCustomResources.DestiinationRuleList;
+import io.openshift.booster.IstioCustomResources.DestinationRule;
+import io.openshift.booster.IstioCustomResources.DoneableDestinationRule;
+
+import io.fabric8.kubernetes.api.model.v4_0.apiextensions.CustomResourceDefinition;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.arquillian.cube.istio.api.IstioResource;
 import org.arquillian.cube.istio.impl.IstioAssistant;
+import org.arquillian.cube.openshift.impl.client.OpenShiftAssistant;
 import org.arquillian.cube.openshift.impl.enricher.RouteURL;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
@@ -47,7 +53,10 @@ public class OpenShiftIT {
     @ArquillianResource
     private IstioAssistant istioAssistant;
 
-    @Test
+    @ArquillianResource
+    private OpenShiftAssistant openShiftAssistant;
+
+//    @Test
     public void testBasicGreeting() {
         waitUntilApplicationIsReady();
 
@@ -72,7 +81,7 @@ public class OpenShiftIT {
         assertThat(responsesCount.getFallbackResponses()).isLessThan(responsesCount.getTotalResponses() / 20);
     }
 
-//    @Test  TODO:uncomment when deletition bug fixed
+    @Test
     public void testInitialDestinationRule() throws IOException, InterruptedException {
         ResponsesCount responsesCount = deployAndMeasure(
                 Collections.singletonList("initial_destination_rule.yml"),0, QUERY_WORKERS_CNT);
@@ -83,7 +92,7 @@ public class OpenShiftIT {
         assertThat(responsesCount.getFallbackResponses()).isLessThan(responsesCount.getTotalResponses() / 20);
     }
 
-//    @Test  TODO:uncomment when deletition bug fixed
+//    @Test // TODO:uncomment when deletition bug fixed
     public void testInitialDestinationWithDelayRule() throws IOException, InterruptedException {
         ResponsesCount responsesCount = deployAndMeasure(
                 Arrays.asList("initial_destination_rule.yml", "name_with_delay.yml"),0, QUERY_WORKERS_CNT);
@@ -94,7 +103,7 @@ public class OpenShiftIT {
         assertThat(responsesCount.getFallbackResponses()).isLessThan(responsesCount.getTotalResponses() / 20);
     }
 
-//    @Test TODO:uncomment when deletition bug fixed
+//    @Test //TODO:uncomment when deletition bug fixed
     public void testRestrictiveDestinationRuleOpen() throws IOException, InterruptedException {
         ResponsesCount responsesCount = deployAndMeasure(
                 Collections.singletonList("restrictive_destination_rule.yml"),0, QUERY_WORKERS_CNT);
@@ -115,7 +124,7 @@ public class OpenShiftIT {
                 .isGreaterThan(responsesCount.getTotalResponses() / 10);
     }
 
-//    @Test TODO:uncomment when deletition bug fixed
+//    @Test //TODO:uncomment when deletition bug fixed
     public void testSimulatedTimeDelay() throws IOException, InterruptedException {
         ResponsesCount responsesCount = deployAndMeasure(
                 Collections.singletonList("restrictive_destination_rule.yml"),150, QUERY_WORKERS_CNT);
@@ -145,6 +154,7 @@ public class OpenShiftIT {
                                             int workersCount) throws InterruptedException, IOException {
         waitUntilApplicationIsReady();
 
+        System.out.println("deploying istio resources: " + istioResources);
         // deploy desired istio rules
         List <me.snowdrop.istio.api.model.IstioResource> resource = new ArrayList<>();
         for (String istioResource: istioResources){
@@ -155,7 +165,12 @@ public class OpenShiftIT {
         // measure effect on application
         ResponsesCount responsesCount = measureResponses(responseDelay, workersCount);
 
+//        System.out.println("undeploying istio resources: " + istioResources);
         istioAssistant.undeployIstioResources(resource);
+//        waitForResourceToUndeploy("destinationrules.networking.istio.io",0);
+//        waitForResourceToUndeploy("policies.authentication.istio.io",0);
+//        waitForResourceToUndeploy("virtualservices.networking.istio.io",1);
+//        Thread.sleep(TimeUnit.SECONDS.toMillis(60)); // wait for resources to really undeploy
         return responsesCount;
     }
 
@@ -205,13 +220,13 @@ public class OpenShiftIT {
                                     .baseUri(ingressGatewayURL.toString())
                                     .when()
                                     .get("/breaker/greeting");
-                            System.out.println(response.asString());
+//                            System.out.println(response.asString());
                             Assert.assertEquals(200,response.statusCode());
                         });
 
         long endTime = System.currentTimeMillis();
 
-        System.out.println("Waiting time: " + ((endTime - startTime)/1000));
+//        System.out.println("Waiting time: " + ((endTime - startTime)/1000));
 
 /*        await()
                 .pollInterval(1, TimeUnit.SECONDS)
@@ -225,6 +240,23 @@ public class OpenShiftIT {
                                 .then()
                                 .statusCode(200)
                 );*/
+    }
+
+    private void waitForResourceToUndeploy(String customResourceName, int desiredCount){
+        CustomResourceDefinition CRD = openShiftAssistant.getClient().customResourceDefinitions().withName(customResourceName).get();
+
+        await()
+                .pollInterval(1, TimeUnit.SECONDS)
+                .atMost(5, TimeUnit.MINUTES)
+                .untilAsserted(() ->
+                {
+                    DestiinationRuleList list = openShiftAssistant.getClient().customResources(CRD,
+                            DestinationRule.class, DestiinationRuleList.class, DoneableDestinationRule.class)
+                            .inNamespace(openShiftAssistant.getCurrentProjectName())
+                            .list();
+                    System.out.println("name: " + customResourceName + " size: " + list.getItems().size());
+                    Assert.assertEquals(desiredCount, list.getItems().size());
+                });
     }
 
     private List<me.snowdrop.istio.api.model.IstioResource> deployIstioResource(String istioResource) throws IOException {
