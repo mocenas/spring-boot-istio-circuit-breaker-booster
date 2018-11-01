@@ -259,7 +259,7 @@ public class OpenShiftIT {
                 });
     }
 
-    private List<me.snowdrop.istio.api.model.IstioResource> deployIstioResource(String istioResource) throws IOException {
+    private List<me.snowdrop.istio.api.IstioResource> deployIstioResource(String istioResource) throws IOException {
         return istioAssistant.deployIstioResources(
                 Files.newInputStream(Paths.get("../istio/" + istioResource)));
     }
