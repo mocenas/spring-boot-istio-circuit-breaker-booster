@@ -69,7 +69,7 @@ public class OpenShiftIT {
         assertThat(responseText).isEqualTo("Hello, World from " + caller + "!");
     }
 
-    @Test
+//    @Test
     public void testOneWorker() throws IOException, InterruptedException {
         waitUntilApplicationIsReady();
         ResponsesCount responsesCount = deployAndMeasure(
@@ -81,7 +81,7 @@ public class OpenShiftIT {
         assertThat(responsesCount.getFallbackResponses()).isLessThan(responsesCount.getTotalResponses() / 20);
     }
 
-    @Test
+//    @Test
     public void testInitialDestinationRule() throws IOException, InterruptedException {
         ResponsesCount responsesCount = deployAndMeasure(
                 Collections.singletonList("initial_destination_rule.yml"),0, QUERY_WORKERS_CNT);
@@ -103,7 +103,7 @@ public class OpenShiftIT {
         assertThat(responsesCount.getFallbackResponses()).isLessThan(responsesCount.getTotalResponses() / 20);
     }
 
-//    @Test //TODO:uncomment when deletition bug fixed
+    @Test //TODO:uncomment when deletition bug fixed
     public void testRestrictiveDestinationRuleOpen() throws IOException, InterruptedException {
         ResponsesCount responsesCount = deployAndMeasure(
                 Collections.singletonList("restrictive_destination_rule.yml"),0, QUERY_WORKERS_CNT);
@@ -156,7 +156,7 @@ public class OpenShiftIT {
 
         System.out.println("deploying istio resources: " + istioResources);
         // deploy desired istio rules
-        List <me.snowdrop.istio.api.model.IstioResource> resource = new ArrayList<>();
+        List <me.snowdrop.istio.api.IstioResource> resource = new ArrayList<>();
         for (String istioResource: istioResources){
             resource.addAll(deployIstioResource(istioResource));
         }
@@ -167,9 +167,9 @@ public class OpenShiftIT {
 
 //        System.out.println("undeploying istio resources: " + istioResources);
         istioAssistant.undeployIstioResources(resource);
-//        waitForResourceToUndeploy("destinationrules.networking.istio.io",0);
-//        waitForResourceToUndeploy("policies.authentication.istio.io",0);
-//        waitForResourceToUndeploy("virtualservices.networking.istio.io",1);
+        waitForResourceToUndeploy("destinationrules.networking.istio.io",0);
+        waitForResourceToUndeploy("policies.authentication.istio.io",0);
+        waitForResourceToUndeploy("virtualservices.networking.istio.io",1);
 //        Thread.sleep(TimeUnit.SECONDS.toMillis(60)); // wait for resources to really undeploy
         return responsesCount;
     }
@@ -226,7 +226,7 @@ public class OpenShiftIT {
 
         long endTime = System.currentTimeMillis();
 
-//        System.out.println("Waiting time: " + ((endTime - startTime)/1000));
+        System.out.println("Waiting time: " + ((endTime - startTime)/1000));
 
 /*        await()
                 .pollInterval(1, TimeUnit.SECONDS)
@@ -254,7 +254,6 @@ public class OpenShiftIT {
                             DestinationRule.class, DestiinationRuleList.class, DoneableDestinationRule.class)
                             .inNamespace(openShiftAssistant.getCurrentProjectName())
                             .list();
-                    System.out.println("name: " + customResourceName + " size: " + list.getItems().size());
                     Assert.assertEquals(desiredCount, list.getItems().size());
                 });
     }
